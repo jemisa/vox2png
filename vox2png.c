@@ -32,6 +32,7 @@
 
 #include "stdlib.h"
 #include "stdio.h"
+#include "math.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
@@ -45,6 +46,14 @@ typedef struct {
 typedef struct {
     unsigned char r, g, b, a;
 } color;
+
+/* Describes the way to pack the sprite cells into the sprite sheet */
+typedef enum {
+    HORIZONTAL,
+    VERTICAL,
+    SQUARE,
+    MULTIFILE,
+} packMode;
 
 /* MagicaVoxel's default palette encoded as 256 RGBA colors */
 const unsigned char defaultPal[256 * 4] = {
@@ -114,9 +123,34 @@ void die(const char *msg) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) die("Wrong number of arguments");
+    if (argc < 3 || argc > 4 || (argc >= 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0))) {
+        printf("Usage:\n");
+        printf("    vox2png input.vox output.png [horizontal|vertical|square|multifile]\n");
+        printf("\n");
+        printf("  * The third argument specifies how the cells will be packed in the sprite sheet\n");
+        printf("      * horizontal puts all cells next to each other on the X axis of the sprite sheet\n");
+        printf("      * vertical does the same thing but on the Y axis\n");
+        printf("      * square goes left->right and top->bottom, like Minecraft's terrain.png\n");
+        printf("      * multifile makes a different file for each cell, don't put .png after the output file in this mode\n");
+        printf("        The default option is horizontal\n");
+        exit(0);
+    }
+    packMode mode = HORIZONTAL;
     char *voxPath = argv[1];
     char *pngPath = argv[2];
+    if (argc == 4) {
+        if (strcmp(argv[3], "horizontal") == 0) {
+            mode = HORIZONTAL;
+        } else if (strcmp(argv[3], "vertical") == 0) {
+            mode = VERTICAL;
+        } else if (strcmp(argv[3], "square") == 0) {
+            mode = SQUARE;
+        } else if (strcmp(argv[3], "multifile") == 0) {
+            mode = MULTIFILE;
+        } else {
+            die("Invalid packing mode");
+        }
+    }
 
     /* Read the .vox file into memory */
 
@@ -199,26 +233,58 @@ voxelsFound:
 
     /* Create the Png image data and write our voxels to it */
 
-    int pngWidth = voxXDim * voxZDim;
-    int pngHeight = voxYDim;
+    int pngWidth, pngHeight;
+    int xCells, yCells;
+    if (mode == HORIZONTAL) {
+        pngWidth = voxXDim * voxZDim;
+        pngHeight = voxYDim;
+        xCells = voxZDim;
+        yCells = 1;
+    } else if (mode == VERTICAL || mode == MULTIFILE) {
+        pngWidth = voxXDim;
+        pngHeight = voxYDim * voxZDim;
+        xCells = 1;
+        yCells = voxZDim;
+    } else if (mode == SQUARE) {
+        int squareCells = (int) ceil(sqrt(voxZDim));
+        pngWidth = voxXDim * squareCells;
+        pngHeight = voxYDim * squareCells;
+        xCells = squareCells;
+        yCells = squareCells;
+    } else die("Invalid packing mode");
+
     pngData = calloc(pngWidth * pngHeight, sizeof(color));
     if (!pngData) die("Couldn't allocate a buffer for the color data");
     for (int i = 0; i < voxCount; ++i) {
         voxel currentVoxel = voxVoxels[i];
         color currentColor = voxPal[currentVoxel.colorIndex];
-        int dataIndex = currentVoxel.x + voxXDim * currentVoxel.z +
-                        currentVoxel.y * (voxXDim * voxZDim);
+
+        int dataX = currentVoxel.x;
+        int dataY = currentVoxel.y;
+        dataX += currentVoxel.z % xCells * voxXDim;
+        dataY += currentVoxel.z / xCells * voxYDim;
+        int dataIndex = dataX + dataY * pngWidth;
+
         pngData[dataIndex] = currentColor;
     }
     printf("Voxels have been loaded into memory\n");
 
     /* Write the image data to the Png */
 
-    if (!stbi_write_png(pngPath, pngWidth, pngHeight, 4, pngData, pngWidth * 4)) {
-        die("Failed to write Png image");
+    if (mode == MULTIFILE) {
+        char nameBuf[64];
+        for (int i = 0; i < yCells; ++i) {
+            snprintf(nameBuf, 63, "%s%i.png", pngPath, i);
+            if (!stbi_write_png(nameBuf, pngWidth, voxYDim, 4, pngData + voxXDim * voxYDim * i, pngWidth * 4)) {
+                die("Failed to write Png image");
+            }
+        }
+    } else {
+        if (!stbi_write_png(pngPath, pngWidth, pngHeight, 4, pngData, pngWidth * 4)) {
+            die("Failed to write Png image");
+        }
     }
-    printf("Wrote Png\n");
-    printf("The cells are [%i, %i], and there are %i of them\n", voxXDim, voxYDim, voxZDim);
+    printf("Wrote Png(s)\n");
 
     /* Clean up */
 
@@ -227,4 +293,3 @@ voxelsFound:
 
     return 0;
 }
-
