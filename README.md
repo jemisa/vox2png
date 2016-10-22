@@ -33,6 +33,6 @@ There is also a mode that gives each sprite cell its own png file:
 
 	./vox2png input.vox output multifile
 	
-Which produces numbered files for each Z layer, like this: file0.png, file1.png .. fileN.png
+Which produces numbered files for each Z layer, like this: output0.png, output1.png .. outputN.png
 
 If you want to see a certain feature, just ask me and I'll add it. Or, if you know C, it shouldn't be hard to do it yourself.
