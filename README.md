@@ -14,20 +14,25 @@ Resulting sprite sheet:
 ![To this](http://i.imgur.com/eAYoJAF.png)
 
 // TODO Add an in engine screenshot here
-
-Format
----------
-As can be seen in the screenshot it currently just puts all the Z layers next to each other on the X axis.  
-I might add an option to export each Z layer as a different file.  
-If you want to see a certain feature, just ask me and I'll add it. Or, if you know C, it shouldn't be hard to do it yourself.
-
+ 
 Building and running
 ----------------------------
-Vox2png doesn't have any dependencies except the C Standard Library. Just compile `vox2png.c` with your C compiler, like this:
+Vox2png doesn't have any dependencies except the C Standard Library (and math.h). Just compile `vox2png.c` with your C compiler, like this:
 
-	gcc vox2png.c -o vox2png
+	gcc vox2png.c -o vox2png -lm
 
 Then you just run it like this:
 
 	./vox2png input.vox output.png
+	
+Or, if you want to use a special sprite packing mode use this:
 
+	./vox2png input.vox output.png horizontal/vertical/square
+	
+There is also a mode that gives each sprite cell its own png file:
+
+	./vox2png input.vox output multifile
+	
+Which produces numbered files for each Z layer, like this: file0.png, file1.png .. fileN.png
+
+If you want to see a certain feature, just ask me and I'll add it. Or, if you know C, it shouldn't be hard to do it yourself.
