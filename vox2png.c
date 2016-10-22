@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
     /* Read the SIZE chunk to get the dimensions of the voxel object */
 
     int voxXDim, voxYDim, voxZDim;
-    for (int i = 0; i < voxLength - 4; ++i) {
+    for (unsigned i = 0; i < voxLength - 4; ++i) {
         if (voxBuffer[i + 0] == 'S' && voxBuffer[i + 1] == 'I' &&
             voxBuffer[i + 2] == 'Z' && voxBuffer[i + 3] == 'E') {
             int *xDimPtr = (int *) &voxBuffer[i + 12 + 4 * 0];
@@ -165,7 +165,7 @@ sizeFound:
 
     int voxCount;
     const voxel *voxVoxels = NULL;
-    for (int i = 0; i < voxLength - 4; ++i) {
+    for (unsigned i = 0; i < voxLength - 4; ++i) {
         if (voxBuffer[i + 0] == 'X' && voxBuffer[i + 1] == 'Y' &&
             voxBuffer[i + 2] == 'Z' && voxBuffer[i + 3] == 'I') {
             int *countPtr = (int *) &voxBuffer[i + 12];
@@ -184,7 +184,7 @@ voxelsFound:
     /* Otherwise just use the default one */
 
     const color *voxPal = NULL;
-    for (int i = 0; i < voxLength - 4; ++i) {
+    for (unsigned i = 0; i < voxLength - 4; ++i) {
         if (voxBuffer[i + 0] == 'R' && voxBuffer[i + 1] == 'G' &&
             voxBuffer[i + 2] == 'B' && voxBuffer[i + 3] == 'A') {
             voxPal = (color *) &voxBuffer[i + 12];
@@ -224,6 +224,7 @@ voxelsFound:
 
     free(pngData);
     free(voxBuffer);
-    voxBuffer = NULL;
+
+    return 0;
 }
 
